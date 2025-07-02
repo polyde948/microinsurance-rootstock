@@ -292,7 +292,7 @@ I’ve completed my updated Rootstock Hacktivate submission titled "Decentralize
 
 Here is the Google Docs link to my tutorial: 🔗 [Insert your Google Docs link here]
 
-GitHub Repo: https://github.com/yourusername/microinsurance-rootstock
+GitHub Repo: https://github.com/polyde948/microinsurance-rootstock/commits?author=polyde948
 
 Let me know if you need any additional information. Thank you for your support and for this opportunity.
 
