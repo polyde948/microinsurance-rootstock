@@ -1,58 +1,63 @@
+Decentralized Microinsurance for Smallholder Farmers on Rootstock
 
-GUIDEME.md
+A Step-by-Step Guide to Building Trustless Agricultural Insurance on Bitcoin-Powered Rootstock
 
-# 🌍 Decentralized Microinsurance for Smallholder Farmers on Rootstock
-### A Step-by-Step Guide to Building Trustless Agricultural Insurance on the Bitcoin-Powered Blockchain
-
----
-
-## Introduction
-
-Smallholder farmers—especially in developing nations—live at the mercy of unpredictable weather, natural disasters, and unstable harvests. For many, a single season of drought or heatwave can mean financial ruin. Traditional insurance providers are either too expensive, too slow, or simply absent in rural regions.
-
-This guide introduces a blockchain-powered solution: a **decentralized microinsurance system** built on **Rootstock (RSK)**. By using smart contracts and weather oracles, we automate payouts to farmers based on real-world data, reducing fraud, eliminating bureaucracy, and providing farmers with financial resilience.
 
 ---
 
-## Why Use Rootstock for Microinsurance?
+Introduction
 
-Rootstock is the smart contract layer built on top of the Bitcoin blockchain. It offers:
+Smallholder farmers face significant risks from unpredictable weather events like droughts and heatwaves. Traditional insurance is often inaccessible or slow. This project uses Rootstock smart contracts and oracles to create decentralized microinsurance, enabling automatic payouts when weather thresholds are breached.
 
-- **Bitcoin-level security**: Rootstock uses merge-mining with Bitcoin, inheriting its hash power.
-- **Ethereum-compatible development**: You can write in Solidity and deploy as on Ethereum.
-- **Low transaction fees**: Perfect for microtransactions like farmer premiums and payouts.
-- **Decentralized automation**: Trustless execution without intermediaries.
-
-Rootstock makes it possible to bring real-world impact to underserved communities using decentralized finance.
 
 ---
 
-## 🌱 System Architecture
+Why Rootstock?
 
-The system contains the following components:
+Bitcoin Security: Inherits security from Bitcoin’s merge-mining.
 
-1. **Smart Contract** — Handles farmer registration, premium storage, threshold checks, and payouts.
-2. **Oracle Contract** — Provides real-time weather data (rainfall and temperature).
-3. **(Optional) Frontend App** — Allows farmers and admins to interact with the contract through a user-friendly interface.
+Ethereum Compatibility: Solidity smart contracts, easy tooling.
 
----
+Low Fees: Affordable microtransactions ideal for small premiums.
 
-## 🔐 Smart Contract Functionality Overview
+Decentralization: Removes intermediaries, fraud, and delays.
 
-Here’s how the system works:
 
-1. **Registration**: Farmers register by sending a small insurance premium in RBTC (or BTC/USDT-wrapped tokens).
-2. **Weather Oracle**: A decentralized oracle feeds current rainfall and temperature data to the contract.
-3. **Claim Processing**: If rainfall is too low (drought) or temperature too high (heatwave), the contract automatically triggers payouts.
-4. **Payout**: Farmers receive double their premium as compensation—instantly and without filing paperwork.
 
 ---
 
-## 💻 Smart Contract Code Walkthrough
+System Overview
 
-Let’s review the key parts of the contract.
+Farmers register and pay insurance premiums (in RBTC).
 
-```solidity
+A weather oracle supplies current rainfall and temperature data.
+
+When bad weather occurs, payouts are triggered automatically.
+
+The admin manages thresholds and payouts securely.
+
+
+
+---
+
+Smart Contract Details
+
+Core Features
+
+Farmers register by sending premium payments.
+
+Registered farmers stored in a manageable array for iteration.
+
+Admin sets rainfall & temperature thresholds.
+
+Admin triggers claims payouts if conditions met.
+
+Events emitted for transparency.
+
+
+Fixed Solidity Code (Key Part)
+
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
 interface IOracle {
@@ -70,6 +75,8 @@ contract MicroInsurance {
     IOracle public oracle;
     uint256 public rainfallThreshold;
     uint256 public temperatureThreshold;
+
+    address[] public farmerAddresses;
     mapping(address => Farmer) public farmers;
 
     event Registered(address farmer, uint256 premium);
@@ -91,20 +98,25 @@ contract MicroInsurance {
     function register() external payable {
         require(!farmers[msg.sender].isRegistered, "Already registered");
         require(msg.value > 0, "Premium required");
+
         farmers[msg.sender] = Farmer(true, msg.value, false);
+        farmerAddresses.push(msg.sender);
+
         emit Registered(msg.sender, msg.value);
     }
 
     function updateThresholds(uint256 _rainfallThreshold, uint256 _temperatureThreshold) external onlyAdmin {
         rainfallThreshold = _rainfallThreshold;
         temperatureThreshold = _temperatureThreshold;
+
         emit ThresholdsUpdated(rainfallThreshold, temperatureThreshold);
     }
 
     function checkAndPayClaims() external onlyAdmin {
         (uint256 rainfall, uint256 temperature) = oracle.getWeatherData();
 
-        for (address farmerAddress = address(0); farmerAddress <= address(type(uint160).max); farmerAddress = address(uint160(farmerAddress) + 1)) {
+        for (uint i = 0; i < farmerAddresses.length; i++) {
+            address farmerAddress = farmerAddresses[i];
             Farmer storage farmer = farmers[farmerAddress];
             if (farmer.isRegistered && !farmer.claimPaid) {
                 if (rainfall < rainfallThreshold || temperature > temperatureThreshold) {
@@ -119,182 +131,121 @@ contract MicroInsurance {
     receive() external payable {}
 }
 
-This contract:
-
-Accepts premiums.
-
-Stores farmer records.
-
-Uses an oracle to fetch external weather data.
-
-Pays out claims automatically if risk conditions are met.
-
-
 
 ---
 
-🧰 Development Environment Setup
+Development Environment Setup
 
-1. Install MetaMask: Required to manage accounts and interact with Rootstock Testnet.
+Prerequisites
 
+Node.js (v16+) and npm
 
-2. Add Rootstock Testnet to MetaMask manually using RPC:
+MetaMask installed with Rootstock Testnet added:
 
 RPC URL: https://public-node.testnet.rsk.co
 
 Chain ID: 31
 
 
+RSK Testnet RBTC from faucet
 
-3. Get Test RBTC from RSK faucet
-
-
-4. Use Remix IDE for easy deployment and testing, or Hardhat for local development.
-
+Remix IDE (https://remix.ethereum.org) or Hardhat for local deployment
 
 
 
 ---
 
-🚀 Step-by-Step Deployment
+Deployment Steps
 
-1. Deploy Oracle Contract (Mock for Testing)
+1. Deploy Oracle Contract (Mock)
 
-Create a mock contract to simulate weather data:
+Use this mock oracle for testing:
 
 contract MockOracle is IOracle {
     function getWeatherData() external pure override returns (uint256, uint256) {
-        return (30, 38); // Low rainfall, high temperature (simulate disaster)
+        return (30, 38); // Simulate drought and heatwave
     }
 }
 
-Deploy this contract first. Copy the contract address.
+Deploy MockOracle first and copy the contract address.
+
+
+
+---
 
 2. Deploy MicroInsurance Contract
 
-In Remix:
+Use Remix or Hardhat.
 
-Use Injected Web3 to connect MetaMask (on Rootstock Testnet)
+Deploy MicroInsurance passing:
 
-Deploy MicroInsurance with:
+_oracle = MockOracle contract address
 
-_oracle: Address of your deployed oracle
+_rainfallThreshold = 50 (example)
 
-_rainfallThreshold: e.g. 50
-
-_temperatureThreshold: e.g. 35
+_temperatureThreshold = 35 (example)
 
 
 
 
 ---
 
-🤝 Interacting with the Contract
+3. Register Farmers
 
-Register a Farmer
+From different accounts (wallets), call register() payable with RBTC premium (e.g., 0.001 RBTC).
 
-Call register() from a new wallet address.
-
-Send RBTC as a premium (e.g., 0.001 RBTC).
-
-Event Registered confirms successful registration.
-
-
-Trigger a Claim
-
-Admin calls checkAndPayClaims()
-
-If weather conditions are met, payouts are sent to farmers.
-
-Event ClaimPaid confirms which farmer was paid.
+Confirm registration via Registered event.
 
 
 
 ---
 
-🧪 Testing Tips
+4. Trigger Claims Payout
 
-Modify your oracle to return normal or extreme weather values to simulate scenarios.
+Admin calls checkAndPayClaims() after oracle updates.
 
-Monitor contract logs and use Rootstock Testnet explorers to view transactions.
-
-Check if farmer wallets received their payouts.
+Contract checks weather data and pays eligible farmers 2x their premium.
 
 
 
 ---
 
-🌐 Frontend Ideas (Optional)
+Interacting with the Contract
 
-You can build a simple React or Vue dApp that:
+You can use Remix or build a simple React frontend with Ethers.js to:
 
-Shows current insurance status for a farmer wallet
+Register farmers by sending premiums.
 
-Displays policy and claim logs
+Admin update thresholds.
 
-Lets farmers register with wallet + premium
-
-Lets admins trigger payouts and update thresholds
-
-
-Use Ethers.js or Web3.js to connect to the Rootstock smart contract.
-
-
----
-
-🔄 Future Improvements
-
-🌐 Use decentralized oracles like Chainlink (when available on Rootstock)
-
-💼 Add staking models for community-led validation
-
-📊 Add analytics dashboard to track climate trends and claims
-
-🌾 Expand to livestock and health microinsurance
-
-🛡️ Integrate KYC if needed for regulatory compliance
+Admin trigger payouts.
 
 
 
 ---
 
-🎯 Social Impact
+Future Improvements
 
-💸 Financial Safety Net: Helps poor farmers bounce back from disasters
+Replace mock oracle with Chainlink or other decentralized oracles.
 
-📖 Transparency: Code enforces policy—no manipulation or corruption
+Build full UI dashboards for farmers and admins.
 
-⚖️ Equity: Anyone can join. No paperwork, no banks, no brokers.
+Add staking and community governance for claim validation.
 
-🌍 Decentralization: Built on Bitcoin’s security with smart contracts
+Extend to cover livestock, health insurance, or crop varieties.
 
+
+
+---
+
+Social Impact
+
+This decentralized insurance helps poor farmers gain financial resilience by automating payouts on climate risk, reducing fraud, and increasing trust.
 
 
 ---
 
-🏁 Conclusion
+License
 
-This decentralized microinsurance system demonstrates the real-world power of Rootstock and blockchain for social good. You can adapt it to different crops, regions, or risk models. With automation and transparency, we can reduce poverty, protect livelihoods, and increase trust in financial systems.
+MIT License — free to use and modify.
 
-Let’s build tools that truly matter.
-
-Built with ❤️ by Nkanyiso – Rootstock Hacktivate 2025
-
----
-
-### ✅ FINAL STEP: Message for Caro/Rootstock Team
-
-Here’s a professional message you can send to Caro when submitting your Google Doc:
-
-Hi Caro,
-
-I’ve completed my updated Rootstock Hacktivate submission titled "Decentralized Microinsurance for Smallholder Farmers on Rootstock." It includes a fully detailed guide and code explanation as requested.
-
-Here is the Google Docs link to my tutorial: 🔗 [Insert your Google Docs link here]
-
-GitHub Repo: https://github.com/polyde948/microinsurance-rootstock/commits?author=polyde948
-
-Let me know if you need any additional information. Thank you for your support and for this opportunity.
-
-Best regards,
-Nkanyiso
